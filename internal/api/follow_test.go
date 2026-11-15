@@ -49,3 +49,25 @@ func TestFollowNeedsUserToken(t *testing.T) {
 		t.Fatalf("status %d", status)
 	}
 }
+
+func TestAvailableEmotesFollowPagesAndDropDuplicates(t *testing.T) {
+	e := newEnv(t)
+	req, _ := http.NewRequest(http.MethodGet, e.srv.URL+"/v1/me/emotes/somechannel", nil)
+	req.Header.Set(secretHeader, testSecret)
+	req.Header.Set(tokenHeader, "user-token")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	var body userEmotesBody
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil || resp.StatusCode != http.StatusOK {
+		t.Fatalf("emotes: %d %v", resp.StatusCode, err)
+	}
+	if body.ChannelID != "42" || len(body.Emotes) != 2 {
+		t.Fatalf("emotes %+v", body)
+	}
+	if body.Emotes[0].Name != "Kappa" || body.Emotes[1].Name != "SubEmote" || body.Emotes[1].OwnerID != "42" {
+		t.Fatalf("emotes %+v", body.Emotes)
+	}
+}

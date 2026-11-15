@@ -78,6 +78,7 @@ func New(opts Options) http.Handler {
 	api.HandleFunc("GET /v1/me/follows/{login}", s.followState)
 	api.HandleFunc("PUT /v1/me/follows/{login}", s.follow)
 	api.HandleFunc("DELETE /v1/me/follows/{login}", s.unfollow)
+	api.HandleFunc("GET /v1/me/emotes/{login}", s.meEmotes)
 	api.HandleFunc("GET /v1/chat/assets", s.globalAssets)
 	api.HandleFunc("GET /v1/chat/{login}/assets", s.channelAssets)
 	api.HandleFunc("GET /v1/chat/{login}/events", s.chatEvents)

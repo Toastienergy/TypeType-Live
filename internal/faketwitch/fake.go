@@ -71,6 +71,8 @@ func (f *Fake) gql(w http.ResponseWriter, r *http.Request) {
 		writeData(w, map[string]any{key: map[string]any{"value": string(value), "signature": "sig"}})
 	case body.OperationName == "FollowButton_FollowUser" || body.OperationName == "FollowButton_UnfollowUser":
 		f.changeFollow(w, body)
+	case body.OperationName == "AvailableEmotesForChannelPaginated":
+		f.emoteSets(w, body)
 	case strings.Contains(body.Query, "query SelfFollowing("):
 		var follower any
 		if at, ok := f.follows.Load("42"); ok {
@@ -97,6 +99,21 @@ func (f *Fake) gql(w http.ResponseWriter, r *http.Request) {
 	default:
 		writeData(w, map[string]any{})
 	}
+}
+
+func (f *Fake) emoteSets(w http.ResponseWriter, body gqlBody) {
+	first := body.Variables["cursor"] == nil
+	emote := map[string]any{"id": "2", "token": "SubEmote", "type": "SUBSCRIPTIONS"}
+	edge := map[string]any{"cursor": "page-2", "node": map[string]any{"emotes": []any{emote}, "owner": map[string]any{"id": "42"}}}
+	if first {
+		globals := []any{
+			map[string]any{"id": "25", "token": "Kappa", "type": "GLOBALS"},
+			map[string]any{"id": "25", "token": "Kappa", "type": "GLOBALS"},
+		}
+		edge = map[string]any{"cursor": "page-1", "node": map[string]any{"emotes": globals}}
+	}
+	sets := map[string]any{"edges": []any{edge}, "pageInfo": map[string]any{"hasNextPage": first}}
+	writeData(w, map[string]any{"channel": map[string]any{"self": map[string]any{"availableEmoteSetsPaginated": sets}}})
 }
 
 func (f *Fake) changeFollow(w http.ResponseWriter, body gqlBody) {
