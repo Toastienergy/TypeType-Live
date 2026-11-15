@@ -1,0 +1,9 @@
+.idea/
+*.iml
+.env
+*.env
+!deploy/live.env.example
+bin/
+out/
+*.pprof
+*.test

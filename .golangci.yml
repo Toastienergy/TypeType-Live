@@ -1,0 +1,63 @@
+version: "2"
+run:
+  timeout: 5m
+linters:
+  default: none
+  enable:
+    - govet
+    - staticcheck
+    - unused
+    - errcheck
+    - ineffassign
+    - revive
+    - funlen
+    - gocyclo
+    - nestif
+    - gosec
+    - bodyclose
+    - noctx
+    - contextcheck
+    - misspell
+  settings:
+    funlen:
+      lines: 60
+      statements: 45
+    gocyclo:
+      min-complexity: 15
+    nestif:
+      min-complexity: 5
+    revive:
+      rules:
+        - name: file-length-limit
+          arguments:
+            - max: 300
+              skipComments: true
+              skipBlankLines: true
+        - name: exported
+          disabled: true
+        - name: package-comments
+          disabled: true
+    errcheck:
+      exclude-functions:
+        - io.WriteString
+        - (net/http.ResponseWriter).Write
+        - (io.ReadCloser).Close
+        - (*github.com/coder/websocket.Conn).CloseNow
+        - fmt.Fprintf
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters: [funlen, gosec, errcheck, noctx, bodyclose, gocyclo]
+      - path: internal/faketwitch/
+        linters: [gosec, errcheck]
+      - linters: [gosec]
+        text: "G705"
+      - path: cmd/typetype-live/main.go
+        linters: [gosec]
+        text: "G704"
+      - linters: [gosec]
+        text: "G101"
+        source: "Token"
+formatters:
+  enable:
+    - gofumpt
