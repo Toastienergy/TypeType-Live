@@ -29,8 +29,7 @@ docker build -t typetype-live .
 | `LIVE_ADDR` | `:8080` | |
 | `LIVE_LOG_LEVEL` | `info` | |
 
-Do not publish the port. Only the server and the web container talk to it. Server and web setup:
-[docs/integration.md](docs/integration.md).
+Do not publish the port. Only the server and the web container talk to it.
 
 ## Develop
 
