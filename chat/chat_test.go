@@ -80,3 +80,19 @@ func TestHubSharesOneConnectionAndReplaysHistory(t *testing.T) {
 	leave()
 	leave2()
 }
+
+func TestRoomStateMergesPartialUpdates(t *testing.T) {
+	r := &room{subs: map[chan Event]struct{}{}}
+	full, _ := parseLine("@emote-only=0;followers-only=0;r9k=0;room-id=1;slow=0;subs-only=0 :tmi.twitch.tv ROOMSTATE #c").event()
+	r.broadcast(full)
+	partial, _ := parseLine("@room-id=1;slow=30 :tmi.twitch.tv ROOMSTATE #c").event()
+	r.broadcast(partial)
+	if r.state == nil || r.state.FollowersOnly != 0 || r.state.Slow != 30 || len(r.history) != 0 {
+		t.Fatalf("state %+v history %d", r.state, len(r.history))
+	}
+	off, _ := parseLine("@followers-only=-1;room-id=1 :tmi.twitch.tv ROOMSTATE #c").event()
+	r.broadcast(off)
+	if r.state.FollowersOnly != -1 || r.state.Slow != 30 {
+		t.Fatalf("state %+v", r.state)
+	}
+}

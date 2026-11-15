@@ -13,18 +13,21 @@ type Emote struct {
 }
 
 type Event struct {
-	Type        string    `json:"type"`
-	ID          string    `json:"id,omitempty"`
-	Login       string    `json:"login,omitempty"`
-	DisplayName string    `json:"displayName,omitempty"`
-	Color       string    `json:"color,omitempty"`
-	Text        string    `json:"text,omitempty"`
-	System      string    `json:"system,omitempty"`
-	Emotes      []Emote   `json:"emotes,omitempty"`
-	Badges      []string  `json:"badges,omitempty"`
-	Time        time.Time `json:"time"`
-	Action      bool      `json:"action,omitempty"`
-	TargetID    string    `json:"targetId,omitempty"`
+	Type        string     `json:"type"`
+	ID          string     `json:"id,omitempty"`
+	Login       string     `json:"login,omitempty"`
+	DisplayName string     `json:"displayName,omitempty"`
+	Color       string     `json:"color,omitempty"`
+	Text        string     `json:"text,omitempty"`
+	System      string     `json:"system,omitempty"`
+	Emotes      []Emote    `json:"emotes,omitempty"`
+	Badges      []string   `json:"badges,omitempty"`
+	Time        time.Time  `json:"time"`
+	Action      bool       `json:"action,omitempty"`
+	TargetID    string     `json:"targetId,omitempty"`
+	Room        *RoomState `json:"room,omitempty"`
+
+	roomTags map[string]string
 }
 
 type line struct {
@@ -94,6 +97,8 @@ func (l line) event() (Event, bool) {
 			ev.Text, ev.Action = strings.TrimSuffix(text, "\x01"), true
 		}
 		return ev, true
+	case "ROOMSTATE":
+		return Event{Type: "room", Time: time.Now(), roomTags: l.tags}, true
 	case "CLEARMSG":
 		return Event{Type: "delete", TargetID: l.tags["target-msg-id"], Time: time.Now()}, true
 	case "CLEARCHAT":

@@ -39,6 +39,7 @@ type room struct {
 	mu      sync.Mutex
 	subs    map[chan Event]struct{}
 	history []Event
+	state   *RoomState
 	cancel  context.CancelFunc
 	idle    *time.Timer
 }
@@ -62,7 +63,12 @@ func (h *Hub) Subscribe(channel string) (<-chan Event, []Event, func()) {
 		r.idle = nil
 	}
 	r.subs[ch] = struct{}{}
-	history := append([]Event(nil), r.history...)
+	history := make([]Event, 0, len(r.history)+1)
+	if r.state != nil {
+		state := *r.state
+		history = append(history, Event{Type: "room", Time: time.Now(), Room: &state})
+	}
+	history = append(history, r.history...)
 	r.mu.Unlock()
 	return ch, history, func() { r.leave(ch) }
 }
@@ -99,9 +105,20 @@ func (r *room) close() {
 func (r *room) broadcast(ev Event) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	r.history = append(r.history, ev)
-	if len(r.history) > historySize {
-		r.history = r.history[len(r.history)-historySize:]
+	if ev.Type == "room" {
+		base := newRoomState()
+		if r.state != nil {
+			base = *r.state
+		}
+		next := base.apply(ev.roomTags)
+		r.state = &next
+		state := next
+		ev.Room, ev.roomTags = &state, nil
+	} else {
+		r.history = append(r.history, ev)
+		if len(r.history) > historySize {
+			r.history = r.history[len(r.history)-historySize:]
+		}
 	}
 	for ch := range r.subs {
 		select {
