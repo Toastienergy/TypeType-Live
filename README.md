@@ -1,4 +1,8 @@
-# TypeType-Live
+<div align="center">
+  <img src="https://raw.githubusercontent.com/TypeType-Video/TypeType/main/assets/banner.svg" alt="TypeType" width="100%">
+  <h1>TypeType Live</h1>
+  <p>Twitch for TypeType: lives, VODs, clips and chat through the instance.</p>
+</div>
 
 You want to know the current position of TypeType about AI ? Go check [this](https://github.com/TypeType-Video/TypeType/blob/dev/AI_TRANSPARENCY.md).
 
