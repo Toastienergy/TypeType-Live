@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -21,6 +22,8 @@ type Fake struct {
 	MasterCalls   atomic.Int64
 	PlaylistCalls atomic.Int64
 	SegmentCalls  atomic.Int64
+
+	follows sync.Map
 }
 
 func New() *Fake {
@@ -64,6 +67,14 @@ func (f *Fake) gql(w http.ResponseWriter, r *http.Request) {
 			key = "videoPlaybackAccessToken"
 		}
 		writeData(w, map[string]any{key: map[string]any{"value": string(value), "signature": "sig"}})
+	case body.OperationName == "FollowButton_FollowUser" || body.OperationName == "FollowButton_UnfollowUser":
+		f.changeFollow(w, body)
+	case strings.Contains(body.Query, "query SelfFollowing("):
+		var follower any
+		if at, ok := f.follows.Load("42"); ok {
+			follower = map[string]any{"followedAt": at}
+		}
+		writeData(w, map[string]any{"user": map[string]any{"id": "42", "self": map[string]any{"follower": follower}}})
 	case strings.Contains(body.Query, "query Channel("):
 		if login == "missing" {
 			writeData(w, map[string]any{"user": nil})
@@ -79,6 +90,18 @@ func (f *Fake) gql(w http.ResponseWriter, r *http.Request) {
 	default:
 		writeData(w, map[string]any{})
 	}
+}
+
+func (f *Fake) changeFollow(w http.ResponseWriter, body gqlBody) {
+	input, _ := body.Variables["input"].(map[string]any)
+	target, _ := input["targetID"].(string)
+	if body.OperationName == "FollowButton_FollowUser" {
+		f.follows.Store(target, f.Now().UTC().Format(time.RFC3339))
+		writeData(w, map[string]any{"followUser": map[string]any{"follow": map[string]any{}, "error": nil}})
+		return
+	}
+	f.follows.Delete(target)
+	writeData(w, map[string]any{"unfollowUser": map[string]any{"follow": map[string]any{}}})
 }
 
 func writeData(w http.ResponseWriter, data any) {
