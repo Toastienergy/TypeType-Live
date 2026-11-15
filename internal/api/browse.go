@@ -53,7 +53,7 @@ func (s *Server) channel(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	ch, err := s.twitch.Channel(r.Context(), login)
+	ch, err := s.channels.Channel(r.Context(), login)
 	respond(w, r, ch, err)
 }
 
@@ -87,7 +87,7 @@ func (s *Server) liveStream(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	ch, err := s.twitch.Channel(r.Context(), login)
+	ch, err := s.channels.Channel(r.Context(), login)
 	if err != nil {
 		writeError(w, r, err)
 		return
@@ -96,7 +96,7 @@ func (s *Server) liveStream(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, twitch.ErrOffline)
 		return
 	}
-	link := s.live.MasterLink(live.KindLive, login, r.Header.Get(tokenHeader))
+	link := s.live.PrepareMaster(r.Context(), live.KindLive, login, r.Header.Get(tokenHeader))
 	writeJSON(w, http.StatusOK, liveBody{Channel: ch, HLSURL: s.hlsLink(link)})
 }
 
@@ -116,7 +116,7 @@ func (s *Server) video(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, err)
 		return
 	}
-	link := s.live.MasterLink(live.KindVOD, id, r.Header.Get(tokenHeader))
+	link := s.live.PrepareMaster(r.Context(), live.KindVOD, id, r.Header.Get(tokenHeader))
 	writeJSON(w, http.StatusOK, videoBody{Video: v, HLSURL: s.hlsLink(link)})
 }
 

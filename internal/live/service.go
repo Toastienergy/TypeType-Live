@@ -1,6 +1,7 @@
 package live
 
 import (
+	"context"
 	"errors"
 	"net/url"
 	"sync"
@@ -17,6 +18,7 @@ const (
 	KindVOD  = "vod"
 
 	masterLinkTTL    = 12 * time.Hour
+	prepareTimeout   = 15 * time.Second
 	variantLinkTTL   = 12 * time.Hour
 	liveSegmentTTL   = 10 * time.Minute
 	vodSegmentTTL    = 8 * time.Hour
@@ -96,12 +98,25 @@ type masterState struct {
 	expires time.Time
 }
 
-func (s *Service) MasterLink(kind, id, userToken string) string {
+func (s *Service) PrepareMaster(ctx context.Context, kind, id, userToken string) string {
+	link, key := s.masterLink(kind, id, userToken)
+	background := context.WithoutCancel(ctx)
+	go func() {
+		ctx, cancel := context.WithTimeout(background, prepareTimeout)
+		defer cancel()
+		_, _ = s.masterState(ctx, kind, id, key, twitch.DefaultPlayer, false)
+	}()
+	return link
+}
+
+func (s *Service) masterLink(kind, id, userToken string) (string, string) {
 	values := url.Values{"t": {kind}, "c": {id}}
+	key := ""
 	if userToken != "" {
-		values.Set("k", s.sessions.put(userToken, masterLinkTTL))
+		key = s.sessions.put(userToken, masterLinkTTL)
+		values.Set("k", key)
 	}
-	return "master.m3u8?" + s.signer.Sign(values, masterLinkTTL).Encode()
+	return "master.m3u8?" + s.signer.Sign(values, masterLinkTTL).Encode(), key
 }
 
 func (s *Service) SignedClipLink(upstream string) string {
