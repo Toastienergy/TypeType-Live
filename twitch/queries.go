@@ -25,6 +25,13 @@ const queryTopStreams = `query TopStreams($first: Int, $after: Cursor) {
 	}
 }`
 
+const queryTagStreams = `query TagStreams($tags: [String!], $first: Int, $after: Cursor) {
+	streams(first: $first, after: $after, options: { sort: VIEWER_COUNT, freeformTags: $tags }) {
+		edges { cursor node { ` + streamWithBroadcaster + ` } }
+		pageInfo { hasNextPage }
+	}
+}`
+
 const queryTopGames = `query TopGames($first: Int, $after: Cursor) {
 	games(first: $first, after: $after) {
 		edges { cursor node { ` + gameFields + ` } }

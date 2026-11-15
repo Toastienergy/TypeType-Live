@@ -48,6 +48,17 @@ func (s *Server) gameStreams(w http.ResponseWriter, r *http.Request) {
 	respond(w, r, gameStreamsBody{Game: game, Streams: page}, err)
 }
 
+func (s *Server) tagStreams(w http.ResponseWriter, r *http.Request) {
+	tag := r.PathValue("tag")
+	if !twitch.ValidTag(tag) {
+		writeJSON(w, http.StatusBadRequest, errorBody{Error: "invalid_tag"})
+		return
+	}
+	first, after := pageParams(r)
+	page, err := s.twitch.TagStreams(r.Context(), tag, first, after)
+	respond(w, r, page, err)
+}
+
 func (s *Server) channel(w http.ResponseWriter, r *http.Request) {
 	login, ok := loginParam(w, r)
 	if !ok {

@@ -61,6 +61,7 @@ func New(opts Options) http.Handler {
 	api.HandleFunc("GET /v1/streams", s.topStreams)
 	api.HandleFunc("GET /v1/games", s.topGames)
 	api.HandleFunc("GET /v1/games/{slug}/streams", s.gameStreams)
+	api.HandleFunc("GET /v1/tags/{tag}/streams", s.tagStreams)
 	api.HandleFunc("GET /v1/channels/{login}", s.channel)
 	api.HandleFunc("GET /v1/channels/{login}/videos", s.channelVideos)
 	api.HandleFunc("GET /v1/channels/{login}/clips", s.channelClips)
