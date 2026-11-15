@@ -99,7 +99,7 @@ func (s *Server) chatSend(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, errorBody{Error: "invalid_message"})
 		return
 	}
-	ch, err := s.twitch.Channel(r.Context(), login)
+	ch, err := s.channels.Channel(r.Context(), login)
 	if err != nil {
 		writeError(w, r, err)
 		return

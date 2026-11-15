@@ -22,6 +22,7 @@ type Fake struct {
 	MasterCalls   atomic.Int64
 	PlaylistCalls atomic.Int64
 	SegmentCalls  atomic.Int64
+	ChannelCalls  atomic.Int64
 
 	follows sync.Map
 }
@@ -76,6 +77,7 @@ func (f *Fake) gql(w http.ResponseWriter, r *http.Request) {
 		}
 		writeData(w, map[string]any{"user": map[string]any{"id": "42", "self": map[string]any{"follower": follower}}})
 	case strings.Contains(body.Query, "query Channel("):
+		f.ChannelCalls.Add(1)
 		if login == "missing" {
 			writeData(w, map[string]any{"user": nil})
 			return

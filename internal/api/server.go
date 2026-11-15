@@ -18,6 +18,7 @@ const (
 
 type Server struct {
 	twitch     *twitch.Client
+	channels   *channelCache
 	live       *live.Service
 	chat       ChatHub
 	assets     *chatassets.Service
@@ -39,6 +40,7 @@ type Options struct {
 func New(opts Options) http.Handler {
 	s := &Server{
 		twitch:     opts.Twitch,
+		channels:   newChannelCache(opts.Twitch),
 		live:       opts.Live,
 		chat:       opts.Chat,
 		assets:     opts.Assets,

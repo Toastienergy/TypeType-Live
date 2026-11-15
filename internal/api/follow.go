@@ -34,7 +34,7 @@ func (s *Server) changeFollow(w http.ResponseWriter, r *http.Request, follow boo
 	if !ok {
 		return
 	}
-	ch, err := s.twitch.Channel(r.Context(), login)
+	ch, err := s.channels.Channel(r.Context(), login)
 	if err != nil {
 		writeError(w, r, err)
 		return

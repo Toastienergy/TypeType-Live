@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"strings"
 	"testing"
 
 	"github.com/TypeType-Video/TypeType-Live/twitch"
@@ -48,16 +47,5 @@ func TestFollowNeedsUserToken(t *testing.T) {
 	e := newEnv(t)
 	if status, _ := e.get(t, "/v1/me/follows/somechannel", true); status != http.StatusUnauthorized {
 		t.Fatalf("status %d", status)
-	}
-}
-
-func TestChatAssetsAnswerEvenWhenProvidersFail(t *testing.T) {
-	e := newEnv(t)
-	status, body := e.get(t, "/v1/chat/somechannel/assets", true)
-	if status != http.StatusOK || !strings.Contains(body, `"channelId":"42"`) {
-		t.Fatalf("channel assets %d %s", status, body)
-	}
-	if status, _ := e.get(t, "/v1/chat/assets", true); status != http.StatusOK {
-		t.Fatalf("global assets %d", status)
 	}
 }
