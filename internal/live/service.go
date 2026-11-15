@@ -94,8 +94,9 @@ func New(cfg Config) *Service {
 func (s *Service) SegmentStats() cache.Stats { return s.segments.Stats() }
 
 type masterState struct {
-	master  hls.Master
-	expires time.Time
+	master     hls.Master
+	expires    time.Time
+	restricted bool
 }
 
 func (s *Service) PrepareMaster(ctx context.Context, kind, id, userToken string) string {

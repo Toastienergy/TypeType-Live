@@ -57,6 +57,8 @@ type Video struct {
 	Preview   string    `json:"previewUrl"`
 	CreatedAt time.Time `json:"createdAt"`
 	Type      string    `json:"type"`
+
+	Storyboard string `json:"-"`
 }
 
 type Clip struct {
@@ -158,12 +160,16 @@ type gqlVideo struct {
 	Preview   string   `json:"previewThumbnailURL"`
 	CreatedAt string   `json:"createdAt"`
 	Type      string   `json:"broadcastType"`
+	Animated  string   `json:"animatedPreviewURL"`
 	Game      *gqlGame `json:"game"`
 	Owner     *gqlUser `json:"owner"`
 }
 
 func (v gqlVideo) model(owner *gqlUser) Video {
-	out := Video{ID: v.ID, Title: v.Title, Length: v.Length, Views: v.Views, Preview: image(v.Preview), Type: v.Type, Game: v.Game.model()}
+	out := Video{
+		ID: v.ID, Title: v.Title, Length: v.Length, Views: v.Views, Preview: image(v.Preview),
+		Type: v.Type, Game: v.Game.model(), Storyboard: v.Animated,
+	}
 	out.CreatedAt, _ = time.Parse(time.RFC3339, v.CreatedAt)
 	switch {
 	case v.Owner != nil:

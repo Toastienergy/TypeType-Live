@@ -45,6 +45,9 @@ func (s *Service) masterState(ctx context.Context, kind, id, key string, player 
 	}
 	return s.masterGroup.Do(ctx, mk, func(ctx context.Context) (*masterState, error) {
 		st, err := s.fetchMaster(ctx, kind, id, userToken, player)
+		if kind == KindVOD && errors.Is(err, twitch.ErrRestricted) {
+			st, err = s.restrictedVODMaster(ctx, id)
+		}
 		if err != nil {
 			return nil, err
 		}

@@ -122,6 +122,16 @@ func (m Media) WithoutAds() Media {
 	return out
 }
 
+func (m Media) WithMutedSegments() Media {
+	out := m
+	out.Segments = make([]Segment, len(m.Segments))
+	for i, s := range m.Segments {
+		s.URI = strings.Replace(s.URI, "-unmuted.ts", "-muted.ts", 1)
+		out.Segments[i] = s
+	}
+	return out
+}
+
 func (m Media) Write(buf *bytes.Buffer, uri func(string) string) {
 	buf.WriteString("#EXTM3U\n")
 	writeTags(buf, m.Header, uri)

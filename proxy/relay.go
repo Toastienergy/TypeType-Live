@@ -85,6 +85,15 @@ func (r *Relay) Fetch(ctx context.Context, upstream string, maxBytes int64) ([]b
 	return body, nil
 }
 
+func (r *Relay) Exists(ctx context.Context, upstream string) bool {
+	resp, err := r.get(ctx, upstream, http.Header{"Range": {"bytes=0-0"}})
+	if err != nil {
+		return false
+	}
+	_ = resp.Body.Close()
+	return resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusPartialContent
+}
+
 func (r *Relay) Stream(w http.ResponseWriter, req *http.Request, upstream string) error {
 	forward := http.Header{}
 	for _, name := range []string{"Range", "If-Range"} {

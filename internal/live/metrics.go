@@ -13,4 +13,5 @@ type Metrics struct {
 	AdSwaps         atomic.Uint64
 	AdStripped      atomic.Uint64
 	UpstreamErrors  atomic.Uint64
+	RestrictedVODs  atomic.Uint64
 }

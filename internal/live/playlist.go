@@ -75,6 +75,9 @@ func (s *Service) fetchVariant(ctx context.Context, kind, id, key, q string, pla
 		}
 		media, err := s.fetchMedia(ctx, variant.URI)
 		if err == nil {
+			if st.restricted {
+				media = media.WithMutedSegments()
+			}
 			return media, variant, nil
 		}
 		if !retryable(err) {

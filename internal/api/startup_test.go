@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/TypeType-Video/TypeType-Live/internal/faketwitch"
 )
 
 func TestChatAssetsAnswerEvenWhenProvidersFail(t *testing.T) {
@@ -53,5 +55,30 @@ func TestChannelLookupsAreSharedBriefly(t *testing.T) {
 	}
 	if calls := e.fake.ChannelCalls.Load(); calls != 1 {
 		t.Fatalf("channel fetched %d times", calls)
+	}
+}
+
+func TestSubscriberOnlyVODFallsBackToTheStoryboardPlaylists(t *testing.T) {
+	e := newEnv(t)
+	status, body := e.get(t, "/v1/videos/"+faketwitch.RestrictedVOD, true)
+	if status != http.StatusOK {
+		t.Fatalf("video %d %s", status, body)
+	}
+	var video struct {
+		HLSURL string `json:"hlsUrl"`
+	}
+	_ = json.Unmarshal([]byte(body), &video)
+	status, master := e.get(t, video.HLSURL, false)
+	if status != http.StatusOK || strings.Count(master, "#EXT-X-STREAM-INF") != 2 || !strings.Contains(master, `STABLE-VARIANT-ID="720p60"`) {
+		t.Fatalf("fallback master %d:\n%s", status, master)
+	}
+	_, variant := e.get(t, "/hls/"+firstURI(master), false)
+	if strings.Count(variant, "segment.ts?") != 2 {
+		t.Fatalf("fallback variant:\n%s", variant)
+	}
+	last := variant[strings.LastIndex(variant, "segment.ts?"):]
+	last = last[:strings.IndexByte(last, '\n')]
+	if status, _ := e.get(t, "/hls/"+last, false); status != http.StatusOK {
+		t.Fatalf("muted segment status %d", status)
 	}
 }

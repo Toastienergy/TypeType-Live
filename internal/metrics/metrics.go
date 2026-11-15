@@ -33,6 +33,7 @@ func Handler(src Sources) http.Handler {
 			{"typetype_live_ad_swaps_total", m.AdSwaps.Load()},
 			{"typetype_live_ad_stripped_total", m.AdStripped.Load()},
 			{"typetype_live_upstream_errors_total", m.UpstreamErrors.Load()},
+			{"typetype_live_restricted_vods_total", m.RestrictedVODs.Load()},
 		}
 		for _, c := range counters {
 			fmt.Fprintf(w, "# TYPE %s counter\n%s %d\n", c.name, c.name, c.value)

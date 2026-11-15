@@ -54,7 +54,7 @@ func ParseMaster(data []byte, base *url.URL) (Master, error) {
 				master.Tags = append(master.Tags, line)
 			}
 		case pending != "":
-			master.Variants = append(master.Variants, newVariant(pending, resolve(base, line)))
+			master.Variants = append(master.Variants, NewVariant(pending, resolve(base, line)))
 			pending = ""
 		}
 	}
@@ -64,7 +64,7 @@ func ParseMaster(data []byte, base *url.URL) (Master, error) {
 	return master, nil
 }
 
-func newVariant(info, uri string) Variant {
+func NewVariant(info, uri string) Variant {
 	attrs := Attributes(info)
 	bandwidth, _ := strconv.ParseInt(attrs["BANDWIDTH"], 10, 64)
 	frameRate, _ := strconv.ParseFloat(attrs["FRAME-RATE"], 64)

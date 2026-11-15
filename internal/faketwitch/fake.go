@@ -38,6 +38,7 @@ func (f *Fake) Handler() http.Handler {
 	mux.HandleFunc("GET /vod/v2/{file}", f.master)
 	mux.HandleFunc("GET /playlist/{kind}/{id}/{q}", f.playlist)
 	mux.HandleFunc("GET /segment/{id}/{q}/{file}", f.segment)
+	mux.HandleFunc("GET /cdn/{special}/{q}/{file}", f.cdn)
 	return mux
 }
 
@@ -88,7 +89,11 @@ func (f *Fake) gql(w http.ResponseWriter, r *http.Request) {
 		}
 		writeData(w, map[string]any{"user": user})
 	case strings.Contains(body.Query, "query Video("):
-		writeData(w, map[string]any{"video": map[string]any{"id": body.Variables["id"], "title": "Past broadcast", "lengthSeconds": 60}})
+		video := map[string]any{"id": body.Variables["id"], "title": "Past broadcast", "lengthSeconds": 60, "broadcastType": "ARCHIVE"}
+		if body.Variables["id"] == RestrictedVOD {
+			video["animatedPreviewURL"] = f.Base + "/cdn/special_" + RestrictedVOD + "/storyboards/" + RestrictedVOD + "-strip-0.jpg"
+		}
+		writeData(w, map[string]any{"video": video})
 	default:
 		writeData(w, map[string]any{})
 	}
@@ -106,6 +111,20 @@ func (f *Fake) changeFollow(w http.ResponseWriter, body gqlBody) {
 	writeData(w, map[string]any{"unfollowUser": map[string]any{"follow": map[string]any{}}})
 }
 
+const RestrictedVOD = "777"
+
+func (f *Fake) cdn(w http.ResponseWriter, r *http.Request) {
+	q, file := r.PathValue("q"), r.PathValue("file")
+	switch {
+	case file == "index-dvr.m3u8" && (q == "chunked" || q == "720p60"):
+		fmt.Fprint(w, "#EXTM3U\n#EXT-X-TARGETDURATION:10\n#EXT-X-MEDIA-SEQUENCE:0\n#EXTINF:10.000,\n0.ts\n#EXTINF:10.000,\n1-unmuted.ts\n#EXT-X-ENDLIST\n")
+	case file == "0.ts" || file == "1-muted.ts":
+		_, _ = w.Write(make([]byte, 1024))
+	default:
+		http.NotFound(w, r)
+	}
+}
+
 func writeData(w http.ResponseWriter, data any) {
 	_ = json.NewEncoder(w).Encode(map[string]any{"data": data})
 }
@@ -113,6 +132,10 @@ func writeData(w http.ResponseWriter, data any) {
 func (f *Fake) master(w http.ResponseWriter, r *http.Request) {
 	f.MasterCalls.Add(1)
 	id := strings.TrimSuffix(r.PathValue("file"), ".m3u8")
+	if id == RestrictedVOD {
+		http.Error(w, "subscriber only", http.StatusForbidden)
+		return
+	}
 	kind := "live"
 	if strings.HasPrefix(r.URL.Path, "/vod/") {
 		kind = "vod"
