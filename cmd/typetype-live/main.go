@@ -14,7 +14,9 @@ import (
 	"time"
 
 	"github.com/TypeType-Video/TypeType-Live/chat"
+	"github.com/TypeType-Video/TypeType-Live/emotes"
 	"github.com/TypeType-Video/TypeType-Live/internal/api"
+	"github.com/TypeType-Video/TypeType-Live/internal/chatassets"
 	"github.com/TypeType-Video/TypeType-Live/internal/config"
 	"github.com/TypeType-Video/TypeType-Live/internal/live"
 	"github.com/TypeType-Video/TypeType-Live/internal/metrics"
@@ -80,6 +82,7 @@ func newHandler(cfg config.Config) (http.Handler, error) {
 	hub := chat.NewHub(cfg.ChatURL)
 	return api.New(api.Options{
 		Twitch:     tw,
+		Assets:     chatassets.New(tw, emotes.New(httpClient)),
 		Live:       service,
 		Chat:       hub,
 		Secret:     cfg.Secret,

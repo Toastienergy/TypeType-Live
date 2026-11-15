@@ -10,6 +10,8 @@ import (
 	"testing"
 
 	"github.com/TypeType-Video/TypeType-Live/chat"
+	"github.com/TypeType-Video/TypeType-Live/emotes"
+	"github.com/TypeType-Video/TypeType-Live/internal/chatassets"
 	"github.com/TypeType-Video/TypeType-Live/internal/faketwitch"
 	"github.com/TypeType-Video/TypeType-Live/internal/live"
 	"github.com/TypeType-Video/TypeType-Live/proxy"
@@ -49,7 +51,12 @@ func newEnv(t *testing.T) *env {
 		BackupPlayers: live.DefaultBackupPlayers,
 		Metrics:       metrics,
 	})
-	srv := httptest.NewServer(New(Options{Twitch: tw, Live: service, Chat: chat.NewHub("ws://127.0.0.1:1"), Secret: testSecret}))
+	em := emotes.New(client)
+	em.SevenTVURL, em.BTTVURL, em.FFZURL = upstream.URL, upstream.URL, upstream.URL
+	srv := httptest.NewServer(New(Options{
+		Twitch: tw, Live: service, Chat: chat.NewHub("ws://127.0.0.1:1"), Secret: testSecret,
+		Assets: chatassets.New(tw, em),
+	}))
 	t.Cleanup(srv.Close)
 	return &env{fake: fake, srv: srv, metrics: metrics}
 }

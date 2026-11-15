@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/TypeType-Video/TypeType-Live/internal/chatassets"
 	"github.com/TypeType-Video/TypeType-Live/internal/live"
 	"github.com/TypeType-Video/TypeType-Live/twitch"
 )
@@ -19,6 +20,7 @@ type Server struct {
 	twitch     *twitch.Client
 	live       *live.Service
 	chat       ChatHub
+	assets     *chatassets.Service
 	secret     []byte
 	publicBase string
 	metrics    http.Handler
@@ -28,6 +30,7 @@ type Options struct {
 	Twitch     *twitch.Client
 	Live       *live.Service
 	Chat       ChatHub
+	Assets     *chatassets.Service
 	Secret     string
 	PublicBase string
 	Metrics    http.Handler
@@ -38,6 +41,7 @@ func New(opts Options) http.Handler {
 		twitch:     opts.Twitch,
 		live:       opts.Live,
 		chat:       opts.Chat,
+		assets:     opts.Assets,
 		secret:     []byte(opts.Secret),
 		publicBase: opts.PublicBase,
 		metrics:    opts.Metrics,
@@ -69,6 +73,11 @@ func New(opts Options) http.Handler {
 	api.HandleFunc("GET /v1/me", s.me)
 	api.HandleFunc("GET /v1/me/live", s.meLive)
 	api.HandleFunc("GET /v1/me/follows", s.meFollows)
+	api.HandleFunc("GET /v1/me/follows/{login}", s.followState)
+	api.HandleFunc("PUT /v1/me/follows/{login}", s.follow)
+	api.HandleFunc("DELETE /v1/me/follows/{login}", s.unfollow)
+	api.HandleFunc("GET /v1/chat/assets", s.globalAssets)
+	api.HandleFunc("GET /v1/chat/{login}/assets", s.channelAssets)
 	api.HandleFunc("GET /v1/chat/{login}/events", s.chatEvents)
 	api.HandleFunc("POST /v1/chat/{login}/messages", s.chatSend)
 	mux.Handle("/v1/", s.private(api))
