@@ -1,0 +1,44 @@
+clone:
+  git:
+    image: woodpeckerci/plugin-git:2.10.0@sha256:0f06b03ec33137b556c77538563f66c400339052d0c5199d4c3ad1a2a37e1964
+    settings:
+      partial: false
+      depth: 0
+      fetch-target-branch: true
+
+when:
+  - event: push
+    branch: [dev, main]
+  - event: pull_request
+  - event: manual
+
+steps:
+  - name: lint
+    image: golang:1.27.4-bookworm@sha256:4fa7c968ba93f1635670522dbb01a2c78150443e1385746924566079f36570ea
+    depends_on: []
+    commands:
+      - |
+        set -eu
+        go install mvdan.cc/gofumpt@v0.12.0
+        go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0
+        test -z "$$(gofumpt -l .)"
+        go vet ./...
+        golangci-lint run ./...
+
+  - name: test
+    image: golang:1.27.4-bookworm@sha256:4fa7c968ba93f1635670522dbb01a2c78150443e1385746924566079f36570ea
+    depends_on: []
+    commands:
+      - go test -race -count=1 ./...
+
+  - name: audit
+    image: golang:1.27.4-bookworm@sha256:4fa7c968ba93f1635670522dbb01a2c78150443e1385746924566079f36570ea
+    depends_on: []
+    commands:
+      - |
+        set -eu
+        go install golang.org/x/vuln/cmd/govulncheck@v1.9.0
+        go install golang.org/x/tools/cmd/deadcode@v0.52.0
+        govulncheck ./...
+        deadcode -test ./...
+        CGO_ENABLED=0 go build -trimpath -o /dev/null ./cmd/typetype-live
