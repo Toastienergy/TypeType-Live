@@ -24,6 +24,9 @@ import (
 	"github.com/TypeType-Video/TypeType-Live/twitch"
 )
 
+// version is set at build time from the release tag (-ldflags -X main.version=...).
+var version = "dev"
+
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "health" {
 		os.Exit(health())
@@ -106,7 +109,7 @@ func serve(cfg config.Config, handler http.Handler) error {
 	}
 	errs := make(chan error, 1)
 	go func() { errs <- srv.ListenAndServe() }()
-	slog.Info("typetype-live listening", "addr", cfg.Addr)
+	slog.Info("typetype-live listening", "addr", cfg.Addr, "version", version)
 	select {
 	case err := <-errs:
 		return err
