@@ -1,0 +1,29 @@
+services:
+  typetype-live:
+    image: typetype-live:local
+    build: ..
+    restart: unless-stopped
+    environment:
+      LIVE_ADDR: ":8080"
+      LIVE_SECRET: ${LIVE_SECRET:?set LIVE_SECRET}
+      LIVE_SIGNING_KEY: ${LIVE_SIGNING_KEY:?set LIVE_SIGNING_KEY}
+      LIVE_PUBLIC_BASE: ${LIVE_PUBLIC_BASE:-/live}
+      LIVE_SEGMENT_CACHE: ${LIVE_SEGMENT_CACHE:-48MiB}
+      GOMEMLIMIT: ${LIVE_GOMEMLIMIT:-100MiB}
+    read_only: true
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    mem_limit: 128m
+    cpus: 2
+    networks: [internal]
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+networks:
+  internal:
+    internal: false
