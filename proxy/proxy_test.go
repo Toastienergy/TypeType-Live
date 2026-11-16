@@ -147,3 +147,21 @@ func TestSealerRoundTrip(t *testing.T) {
 		t.Fatalf("foreign key err = %v", err)
 	}
 }
+
+func TestTransportErrorsKeepTheQueryOutOfTheMessage(t *testing.T) {
+	relay, base := testRelay(t, func(w http.ResponseWriter, _ *http.Request) {
+		hj, ok := w.(http.Hijacker)
+		if !ok {
+			t.Fatal("no hijacker")
+		}
+		conn, _, _ := hj.Hijack()
+		conn.Close()
+	})
+	_, err := relay.Fetch(context.Background(), base+"/playlist.m3u8?sig=secret-sig&token=secret-token", 10)
+	if !errors.Is(err, ErrUpstream) {
+		t.Fatalf("err = %v", err)
+	}
+	if strings.Contains(err.Error(), "secret") || strings.Contains(err.Error(), "playlist") {
+		t.Fatalf("error leaks the request URL: %v", err)
+	}
+}
