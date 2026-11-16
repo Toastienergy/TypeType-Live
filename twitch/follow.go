@@ -11,13 +11,31 @@ const (
 )
 
 const querySelfFollowing = `query SelfFollowing($login: String) {
-  user(login: $login, lookupType: ALL) { id self { follower { followedAt } } }
+  user(login: $login, lookupType: ALL) { id self {
+    follower { followedAt }
+    subscriptionBenefit { tier purchasedWithPrime }
+    cumulative: subscriptionTenure(tenureMethod: CUMULATIVE) { months }
+    streak: subscriptionTenure(tenureMethod: STREAK) { months }
+  } }
 }`
 
 type FollowState struct {
-	ChannelID  string `json:"channelId"`
-	Following  bool   `json:"following"`
-	FollowedAt string `json:"followedAt,omitempty"`
+	ChannelID    string        `json:"channelId"`
+	Following    bool          `json:"following"`
+	FollowedAt   string        `json:"followedAt,omitempty"`
+	Subscription *Subscription `json:"subscription,omitempty"`
+}
+
+// Subscription is the viewer's own subscription to a channel, as the Twitch sub button reads it.
+type Subscription struct {
+	Tier   string `json:"tier"`
+	Prime  bool   `json:"prime"`
+	Months int    `json:"months"`
+	Streak int    `json:"streak"`
+}
+
+type tenure struct {
+	Months int `json:"months"`
 }
 
 func (c *Client) Following(ctx context.Context, userToken, login string) (FollowState, error) {
@@ -28,6 +46,12 @@ func (c *Client) Following(ctx context.Context, userToken, login string) (Follow
 				Follower *struct {
 					FollowedAt string `json:"followedAt"`
 				} `json:"follower"`
+				Benefit *struct {
+					Tier  string `json:"tier"`
+					Prime bool   `json:"purchasedWithPrime"`
+				} `json:"subscriptionBenefit"`
+				Cumulative *tenure `json:"cumulative"`
+				Streak     *tenure `json:"streak"`
 			} `json:"self"`
 		} `json:"user"`
 	}
@@ -39,9 +63,22 @@ func (c *Client) Following(ctx context.Context, userToken, login string) (Follow
 		return FollowState{}, ErrNotFound
 	}
 	state := FollowState{ChannelID: data.User.ID}
-	if data.User.Self != nil && data.User.Self.Follower != nil && data.User.Self.Follower.FollowedAt != "" {
+	self := data.User.Self
+	if self == nil {
+		return state, nil
+	}
+	if self.Follower != nil && self.Follower.FollowedAt != "" {
 		state.Following = true
-		state.FollowedAt = data.User.Self.Follower.FollowedAt
+		state.FollowedAt = self.Follower.FollowedAt
+	}
+	if self.Benefit != nil {
+		state.Subscription = &Subscription{Tier: self.Benefit.Tier, Prime: self.Benefit.Prime}
+		if self.Cumulative != nil {
+			state.Subscription.Months = self.Cumulative.Months
+		}
+		if self.Streak != nil {
+			state.Subscription.Streak = self.Streak.Months
+		}
 	}
 	return state, nil
 }
