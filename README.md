@@ -26,8 +26,8 @@ docker build -t typetype-live .
 
 | Variable | Default | |
 | --- | --- | --- |
-| `LIVE_SECRET` | required | Shared with the server, 32+ characters |
-| `LIVE_SIGNING_KEY` | random | Keeps signed links valid across restarts |
+| `LIVE_SECRET` | required | Shared with the server, 32+ characters (or `LIVE_SECRET_FILE`) |
+| `LIVE_SIGNING_KEY` | random | Keeps signed links valid across restarts (or `LIVE_SIGNING_KEY_FILE`) |
 | `LIVE_PUBLIC_BASE` | | Public prefix of the HLS links, e.g. `/live` |
 | `LIVE_SEGMENT_CACHE` | `32MiB` | About channels watched x segment size x 6 |
 | `LIVE_ADDR` | `:8080` | |
