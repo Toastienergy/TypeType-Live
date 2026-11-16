@@ -24,17 +24,25 @@ type Config struct {
 }
 
 func Load(getenv func(string) string) (Config, error) {
+	secret, err := secretValue(getenv, "LIVE_SECRET")
+	if err != nil {
+		return Config{}, err
+	}
+	signingKey, err := secretValue(getenv, "LIVE_SIGNING_KEY")
+	if err != nil {
+		return Config{}, err
+	}
 	cfg := Config{
 		Addr:       valueOr(getenv("LIVE_ADDR"), ":8080"),
 		PprofAddr:  getenv("LIVE_PPROF_ADDR"),
-		Secret:     getenv("LIVE_SECRET"),
+		Secret:     secret,
 		PublicBase: strings.TrimRight(getenv("LIVE_PUBLIC_BASE"), "/"),
 		ClientID:   getenv("TWITCH_CLIENT_ID"),
 	}
 	if len(cfg.Secret) < 32 {
 		return Config{}, errors.New("config: LIVE_SECRET must be at least 32 characters")
 	}
-	if key := getenv("LIVE_SIGNING_KEY"); key != "" {
+	if key := signingKey; key != "" {
 		if len(key) < 32 {
 			return Config{}, errors.New("config: LIVE_SIGNING_KEY must be at least 32 characters")
 		}
@@ -60,6 +68,23 @@ func Load(getenv func(string) string) (Config, error) {
 
 func FromEnv() (Config, error) {
 	return Load(os.Getenv)
+}
+
+// secretValue reads a secret from its variable, or from the file named by <name>_FILE, the way the TypeType stack
+// hands its generated secrets to the containers.
+func secretValue(getenv func(string) string, name string) (string, error) {
+	if value := getenv(name); value != "" {
+		return value, nil
+	}
+	path := getenv(name + "_FILE")
+	if path == "" {
+		return "", nil
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("config: %s_FILE: %w", name, err)
+	}
+	return strings.TrimSpace(string(raw)), nil
 }
 
 func valueOr(v, fallback string) string {
