@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -141,7 +142,13 @@ func (r *Relay) get(ctx context.Context, upstream string, headers http.Header) (
 	}
 	resp, err := r.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", ErrUpstream, err)
+		// A transport error quotes the whole request URL, signature and playback token included; the error ends up
+		// in the logs, so only the host is kept.
+		var urlErr *url.Error
+		if errors.As(err, &urlErr) {
+			err = urlErr.Err
+		}
+		return nil, fmt.Errorf("%w: %s: %w", ErrUpstream, u.Host, err)
 	}
 	return resp, nil
 }
