@@ -85,6 +85,7 @@ func New(opts Options) http.Handler {
 	api.HandleFunc("GET /v1/chat/assets", s.globalAssets)
 	api.HandleFunc("GET /v1/chat/{login}/assets", s.channelAssets)
 	api.HandleFunc("GET /v1/chat/{login}/events", s.chatEvents)
+	api.HandleFunc("GET /v1/chat/{login}/highlights", s.chatHighlights)
 	api.HandleFunc("POST /v1/chat/{login}/messages", s.chatSend)
 	mux.Handle("/v1/", s.private(api))
 
