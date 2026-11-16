@@ -76,15 +76,7 @@ func (f *Fake) gql(w http.ResponseWriter, r *http.Request) {
 	case body.OperationName == "AvailableEmotesForChannelPaginated":
 		f.emoteSets(w, body)
 	case body.OperationName == "VideoPlayer_ChapterSelectButtonVideo":
-		f.ChapterAuth.Store(r.Header.Get("Authorization"))
-		if r.Header.Get("Authorization") == "OAuth revoked" {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
-			return
-		}
-		moment := map[string]any{"type": "GAME_CHANGE", "positionMilliseconds": 0, "description": "Just Chatting"}
-		writeData(w, map[string]any{"video": map[string]any{"moments": map[string]any{
-			"edges": []any{map[string]any{"node": moment}},
-		}}})
+		f.chapters(w, r)
 	case strings.Contains(body.Query, "query SelfFollowing("):
 		var follower any
 		if at, ok := f.follows.Load("42"); ok {
@@ -111,6 +103,18 @@ func (f *Fake) gql(w http.ResponseWriter, r *http.Request) {
 	default:
 		writeData(w, map[string]any{})
 	}
+}
+
+func (f *Fake) chapters(w http.ResponseWriter, r *http.Request) {
+	f.ChapterAuth.Store(r.Header.Get("Authorization"))
+	if r.Header.Get("Authorization") == "OAuth revoked" {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	moment := map[string]any{"type": "GAME_CHANGE", "positionMilliseconds": 0, "description": "Just Chatting"}
+	writeData(w, map[string]any{"video": map[string]any{"moments": map[string]any{
+		"edges": []any{map[string]any{"node": moment}},
+	}}})
 }
 
 func (f *Fake) emoteSets(w http.ResponseWriter, body gqlBody) {
