@@ -48,6 +48,10 @@ func (s *Service) renderVariant(ctx context.Context, kind, id, key, q string) ([
 			media = media.WithoutAds()
 		}
 	}
+	// Both latency modes of the web player read the prefetch segments: the steady one simply stays further behind.
+	if kind == KindLive {
+		media = media.WithPrefetchSegments()
+	}
 	ttl, cacheable := vodSegmentTTL, ""
 	if kind == KindLive {
 		ttl, cacheable = liveSegmentTTL, "1"
