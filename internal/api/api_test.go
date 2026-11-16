@@ -116,8 +116,8 @@ func TestLivePlaybackEndToEnd(t *testing.T) {
 	if strings.Contains(variant, "beacon") || strings.Contains(variant, "127.0.0.1") {
 		t.Fatalf("variant leaks upstream data:\n%s", variant)
 	}
-	if !strings.Contains(variant, "#EXT-X-TWITCH-PREFETCH:segment.ts?") {
-		t.Fatalf("prefetch not proxied:\n%s", variant)
+	if strings.Contains(variant, "#EXT-X-TWITCH-PREFETCH") || strings.Count(variant, "#EXTINF:") != 7 {
+		t.Fatalf("prefetch segment not listed as a segment:\n%s", variant)
 	}
 	segment := "/hls/" + firstURI(variant)
 	for range 3 {

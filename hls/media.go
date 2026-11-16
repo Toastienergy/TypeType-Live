@@ -203,3 +203,21 @@ func IsAdDateRange(attrs map[string]string) bool {
 	}
 	return false
 }
+
+// WithPrefetchSegments lists Twitch's prefetch segments as ordinary ones, as the Twitch player and Streamlink's low
+// latency mode do: they are the segments still being encoded, and their request answers once they are complete, so
+// a player that loads them stays a couple of segments closer to the broadcaster.
+func (m Media) WithPrefetchSegments() Media {
+	if len(m.Prefetch) == 0 || len(m.Segments) == 0 || m.Ended {
+		return m
+	}
+	out := m
+	out.Segments = make([]Segment, len(m.Segments), len(m.Segments)+len(m.Prefetch))
+	copy(out.Segments, m.Segments)
+	last := m.Segments[len(m.Segments)-1]
+	for _, uri := range m.Prefetch {
+		out.Segments = append(out.Segments, Segment{Duration: last.Duration, Title: last.Title, URI: uri})
+	}
+	out.Prefetch = nil
+	return out
+}
