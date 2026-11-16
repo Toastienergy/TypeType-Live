@@ -115,3 +115,12 @@ func (s *Server) chatSend(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (s *Server) chatHighlights(w http.ResponseWriter, r *http.Request) {
+	login, ok := loginParam(w, r)
+	if !ok {
+		return
+	}
+	highlights, err := s.twitch.ChatHighlights(r.Context(), login)
+	respond(w, r, highlights, err)
+}
