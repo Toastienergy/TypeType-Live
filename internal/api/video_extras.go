@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/TypeType-Video/TypeType-Live/twitch"
@@ -16,7 +17,9 @@ func (s *Server) videoComments(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	offset := twitch.ParseCommentOffset(r.URL.Query().Get("offset"))
-	page, err := s.twitch.VideoComments(r.Context(), id, offset, cursor)
+	page, err := withViewerToken(r, func(token string) (twitch.Page[twitch.VideoComment], error) {
+		return s.twitch.VideoComments(r.Context(), token, id, offset, cursor)
+	})
 	respond(w, r, page, err)
 }
 
@@ -26,6 +29,19 @@ func (s *Server) videoChapters(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, errorBody{Error: "invalid_id"})
 		return
 	}
-	chapters, err := s.twitch.VideoChapters(r.Context(), id)
+	chapters, err := withViewerToken(r, func(token string) ([]twitch.VideoChapter, error) {
+		return s.twitch.VideoChapters(r.Context(), token, id)
+	})
 	respond(w, r, chapters, err)
+}
+
+// withViewerToken reads with the viewer's linked account when there is one, and anonymously when Twitch rejects
+// that token, so a revoked link never hides content anyone can see.
+func withViewerToken[T any](r *http.Request, read func(token string) (T, error)) (T, error) {
+	token := r.Header.Get(tokenHeader)
+	value, err := read(token)
+	if token != "" && errors.Is(err, twitch.ErrBadToken) {
+		return read("")
+	}
+	return value, err
 }

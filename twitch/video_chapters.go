@@ -11,8 +11,9 @@ type VideoChapter struct {
 	Game  *Game  `json:"game,omitempty"`
 }
 
-// VideoChapters returns the game changes of a past broadcast in playback order.
-func (c *Client) VideoChapters(ctx context.Context, videoID string) ([]VideoChapter, error) {
+// VideoChapters returns the game changes of a past broadcast in playback order. An empty userToken reads them
+// anonymously.
+func (c *Client) VideoChapters(ctx context.Context, userToken, videoID string) ([]VideoChapter, error) {
 	var data struct {
 		Video *struct {
 			Moments *struct {
@@ -34,7 +35,7 @@ func (c *Client) VideoChapters(ctx context.Context, videoID string) ([]VideoChap
 		} `json:"video"`
 	}
 	vars := map[string]any{"videoID": videoID, "includePrivate": false}
-	if err := c.gql(ctx, "", nil, persisted("VideoPlayer_ChapterSelectButtonVideo", videoChaptersHash, vars), &data); err != nil {
+	if err := c.gql(ctx, userToken, nil, persisted("VideoPlayer_ChapterSelectButtonVideo", videoChaptersHash, vars), &data); err != nil {
 		return nil, err
 	}
 	if data.Video == nil {

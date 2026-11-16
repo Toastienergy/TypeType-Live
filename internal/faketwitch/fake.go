@@ -23,6 +23,8 @@ type Fake struct {
 	PlaylistCalls atomic.Int64
 	SegmentCalls  atomic.Int64
 	ChannelCalls  atomic.Int64
+	// ChapterAuth holds the Authorization header of the last chapters query; "OAuth revoked" is answered with 401.
+	ChapterAuth atomic.Value
 
 	follows sync.Map
 }
@@ -73,6 +75,16 @@ func (f *Fake) gql(w http.ResponseWriter, r *http.Request) {
 		f.changeFollow(w, body)
 	case body.OperationName == "AvailableEmotesForChannelPaginated":
 		f.emoteSets(w, body)
+	case body.OperationName == "VideoPlayer_ChapterSelectButtonVideo":
+		f.ChapterAuth.Store(r.Header.Get("Authorization"))
+		if r.Header.Get("Authorization") == "OAuth revoked" {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		moment := map[string]any{"type": "GAME_CHANGE", "positionMilliseconds": 0, "description": "Just Chatting"}
+		writeData(w, map[string]any{"video": map[string]any{"moments": map[string]any{
+			"edges": []any{map[string]any{"node": moment}},
+		}}})
 	case strings.Contains(body.Query, "query SelfFollowing("):
 		var follower any
 		if at, ok := f.follows.Load("42"); ok {

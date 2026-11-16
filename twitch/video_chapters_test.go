@@ -15,7 +15,7 @@ func TestVideoChaptersKeepTheGameChanges(t *testing.T) {
 			{"node":{"type":"OTHER","positionMilliseconds":500000,"description":"skip"}},
 			{"node":{"type":"GAME_CHANGE","positionMilliseconds":10839000,"description":"","details":{"game":{"id":"33214","displayName":"Fortnite","boxArtURL":"https://a/2.jpg"}}}}]}}}}`)
 	})
-	chapters, err := c.VideoChapters(context.Background(), "2929630714")
+	chapters, err := c.VideoChapters(context.Background(), "", "2929630714")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -32,7 +32,7 @@ func TestVideoChaptersOfAMissingVideo(t *testing.T) {
 	c := fakeClient(t, func(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, `{"data":{"video":null}}`)
 	})
-	if _, err := c.VideoChapters(context.Background(), "1"); err != ErrNotFound {
+	if _, err := c.VideoChapters(context.Background(), "", "1"); err != ErrNotFound {
 		t.Fatalf("err %v", err)
 	}
 }

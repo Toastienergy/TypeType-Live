@@ -79,8 +79,9 @@ func (g gqlVideoComment) model() VideoComment {
 	return out
 }
 
-// VideoComments returns the chat of a past broadcast from offsetSeconds, or from the cursor of a previous page.
-func (c *Client) VideoComments(ctx context.Context, videoID string, offsetSeconds int, cursor string) (Page[VideoComment], error) {
+// VideoComments returns the chat of a past broadcast from offsetSeconds, or from the cursor of a previous page. An
+// empty userToken reads it anonymously.
+func (c *Client) VideoComments(ctx context.Context, userToken, videoID string, offsetSeconds int, cursor string) (Page[VideoComment], error) {
 	vars := map[string]any{"videoID": videoID}
 	if cursor != "" {
 		vars["cursor"] = cursor
@@ -97,7 +98,7 @@ func (c *Client) VideoComments(ctx context.Context, videoID string, offsetSecond
 			} `json:"comments"`
 		} `json:"video"`
 	}
-	if err := c.gql(ctx, "", nil, persisted("VideoCommentsByOffsetOrCursor", videoCommentsHash, vars), &data); err != nil {
+	if err := c.gql(ctx, userToken, nil, persisted("VideoCommentsByOffsetOrCursor", videoCommentsHash, vars), &data); err != nil {
 		return Page[VideoComment]{}, err
 	}
 	if data.Video == nil {

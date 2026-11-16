@@ -22,7 +22,7 @@ func TestVideoCommentsKeepTheLiveChatShape(t *testing.T) {
 			"message":{"userColor":"#DAA520","fragments":[{"text":"héllo "},{"text":"Kappa","emote":{"emoteID":"25"}},{"text":" !"}],
 			"userBadges":[{"setID":"subscriber","version":"12"}]}}}],"pageInfo":{"hasNextPage":true}}}}}`)
 	})
-	page, err := c.VideoComments(context.Background(), "2929630714", 120, "")
+	page, err := c.VideoComments(context.Background(), "", "2929630714", 120, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -48,7 +48,7 @@ func TestVideoCommentsFollowTheCursor(t *testing.T) {
 		vars = single.Variables
 		io.WriteString(w, `{"data":{"video":{"comments":{"edges":[],"pageInfo":{"hasNextPage":false}}}}}`)
 	})
-	page, err := c.VideoComments(context.Background(), "1", 0, "abc")
+	page, err := c.VideoComments(context.Background(), "", "1", 0, "abc")
 	if err != nil || page.HasMore || len(page.Items) != 0 {
 		t.Fatalf("page %+v err %v", page, err)
 	}
