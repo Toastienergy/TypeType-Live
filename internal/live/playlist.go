@@ -45,7 +45,7 @@ func (s *Service) renderVariant(ctx context.Context, kind, id, key, q string) ([
 			media = clean
 		} else {
 			s.metrics.AdStripped.Add(1)
-			media = media.WithoutAds()
+			media = media.WithoutAds().WithAdBreakNotice(s.now())
 		}
 	}
 	// Both latency modes of the web player read the prefetch segments: the steady one simply stays further behind.
