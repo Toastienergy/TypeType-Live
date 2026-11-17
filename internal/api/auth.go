@@ -111,6 +111,16 @@ func (s *Server) meLive(w http.ResponseWriter, r *http.Request) {
 	respond(w, r, page, err)
 }
 
+func (s *Server) meVideos(w http.ResponseWriter, r *http.Request) {
+	token, ok := userToken(w, r)
+	if !ok {
+		return
+	}
+	first, after := pageParams(r)
+	page, err := s.twitch.FollowedVideos(r.Context(), token, first, after)
+	respond(w, r, page, err)
+}
+
 func (s *Server) meFollows(w http.ResponseWriter, r *http.Request) {
 	token, ok := userToken(w, r)
 	if !ok {
