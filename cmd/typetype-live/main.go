@@ -24,8 +24,12 @@ import (
 	"github.com/TypeType-Video/TypeType-Live/twitch"
 )
 
-// version is set at build time from the release tag (-ldflags -X main.version=...).
-var version = "dev"
+// Set at build time by the release pipeline (-ldflags -X main.version=... -X main.revision=... -X main.buildTime=...).
+var (
+	version   = "dev"
+	revision  = ""
+	buildTime = ""
+)
 
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "health" {
@@ -90,6 +94,7 @@ func newHandler(cfg config.Config) (http.Handler, error) {
 		Chat:       hub,
 		Secret:     cfg.Secret,
 		PublicBase: cfg.PublicBase,
+		Build:      api.Build{Version: version, Revision: revision, BuildTime: buildTime},
 		Metrics:    metrics.Handler(metrics.Sources{Live: liveMetrics, Segments: service.SegmentStats, Rooms: hub.Rooms}),
 	}), nil
 }

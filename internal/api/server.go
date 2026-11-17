@@ -25,6 +25,7 @@ type Server struct {
 	secret     []byte
 	publicBase string
 	metrics    http.Handler
+	build      Build
 }
 
 type Options struct {
@@ -35,6 +36,7 @@ type Options struct {
 	Secret     string
 	PublicBase string
 	Metrics    http.Handler
+	Build      Build
 }
 
 func New(opts Options) http.Handler {
@@ -47,9 +49,11 @@ func New(opts Options) http.Handler {
 		secret:     []byte(opts.Secret),
 		publicBase: opts.PublicBase,
 		metrics:    opts.Metrics,
+		build:      opts.Build,
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusNoContent) })
+	mux.HandleFunc("GET /version", s.version)
 	mux.Handle("GET /metrics", s.private(s.metrics))
 
 	mux.HandleFunc("GET /hls/master.m3u8", s.hlsMaster)

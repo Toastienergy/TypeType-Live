@@ -4,7 +4,11 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 ARG APP_VERSION=dev
-RUN CGO_ENABLED=0 go build -trimpath -buildvcs=false -ldflags "-s -w -X main.version=${APP_VERSION}" -o /out/typetype-live ./cmd/typetype-live
+ARG GITHUB_SHA=unknown
+ARG BUILD_TIME=unknown
+RUN CGO_ENABLED=0 go build -trimpath -buildvcs=false \
+    -ldflags "-s -w -X main.version=${APP_VERSION} -X main.revision=${GITHUB_SHA} -X main.buildTime=${BUILD_TIME}" \
+    -o /out/typetype-live ./cmd/typetype-live
 
 FROM scratch
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
