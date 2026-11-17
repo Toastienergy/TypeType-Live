@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const prefetchTag = "#EXT-X-TWITCH-PREFETCH:"
@@ -26,6 +27,9 @@ type Media struct {
 	MediaSequence int64
 	Ended         bool
 	AdBreak       bool
+	// AdStarts and AdEnds frame the ads Twitch announced in this playlist, zero when it gave no timing.
+	AdStarts time.Time
+	AdEnds   time.Time
 }
 
 func ParseMedia(data []byte, base *url.URL) (Media, error) {
@@ -71,6 +75,9 @@ func (p *mediaParser) tag(line string) {
 	case strings.HasPrefix(line, "#EXT-X-DATERANGE:"):
 		keep, ad := classifyDateRange(line)
 		p.media.AdBreak = p.media.AdBreak || ad
+		if ad {
+			p.media.noteAd(line)
+		}
 		if keep {
 			p.pending.Tags = append(p.pending.Tags, line)
 		}
@@ -172,6 +179,28 @@ func classifyDateRange(line string) (keep, ad bool) {
 		return false, true
 	}
 	return attrs["CLASS"] != "twitch-trigger", false
+}
+
+func (m *Media) noteAd(line string) {
+	attrs := Attributes(line)
+	start, err := time.Parse(time.RFC3339Nano, attrs["START-DATE"])
+	if err != nil {
+		return
+	}
+	if m.AdStarts.IsZero() || start.Before(m.AdStarts) {
+		m.AdStarts = start
+	}
+	end, err := time.Parse(time.RFC3339Nano, attrs["END-DATE"])
+	if err != nil {
+		seconds, perr := strconv.ParseFloat(attrs["DURATION"], 64)
+		if perr != nil || seconds <= 0 {
+			return
+		}
+		end = start.Add(time.Duration(seconds * float64(time.Second)))
+	}
+	if end.After(m.AdEnds) {
+		m.AdEnds = end
+	}
 }
 
 func parseInf(line string) (float64, string) {

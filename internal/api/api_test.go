@@ -160,6 +160,9 @@ func TestAdsAreSwappedForABackupStream(t *testing.T) {
 	if strings.Contains(variant, "Amazon") || strings.Contains(variant, "stitched-ad") {
 		t.Fatalf("ads left in playlist:\n%s", variant)
 	}
+	if strings.Contains(variant, "com.typetype.ad-break") {
+		t.Fatalf("an ad-free swap announced a break:\n%s", variant)
+	}
 	if e.metrics.AdSwaps.Load() != 1 || e.metrics.AdStripped.Load() != 0 {
 		t.Fatalf("swaps %d stripped %d", e.metrics.AdSwaps.Load(), e.metrics.AdStripped.Load())
 	}
@@ -170,6 +173,9 @@ func TestAdsAreStrippedWhenEveryStreamHasThem(t *testing.T) {
 	_, variant := e.liveVariant(t, "adsonly")
 	if strings.Contains(variant, "Amazon") || strings.Count(variant, "#EXTINF") != 3 {
 		t.Fatalf("unexpected playlist:\n%s", variant)
+	}
+	if !strings.Contains(variant, `CLASS="com.typetype.ad-break"`) {
+		t.Fatalf("the stripped break is not announced:\n%s", variant)
 	}
 	if e.metrics.AdStripped.Load() != 1 {
 		t.Fatalf("stripped %d", e.metrics.AdStripped.Load())
