@@ -89,8 +89,9 @@ func (s *Server) channelClips(w http.ResponseWriter, r *http.Request) {
 }
 
 type liveBody struct {
-	Channel twitch.Channel `json:"channel"`
-	HLSURL  string         `json:"hlsUrl"`
+	Channel  twitch.Channel `json:"channel"`
+	HLSURL   string         `json:"hlsUrl"`
+	AudioURL string         `json:"audioUrl"`
 }
 
 func (s *Server) liveStream(w http.ResponseWriter, r *http.Request) {
@@ -107,13 +108,14 @@ func (s *Server) liveStream(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, twitch.ErrOffline)
 		return
 	}
-	link := s.live.PrepareMaster(r.Context(), live.KindLive, login, r.Header.Get(tokenHeader))
-	writeJSON(w, http.StatusOK, liveBody{Channel: ch, HLSURL: s.hlsLink(link)})
+	link, audio := s.live.PrepareMaster(r.Context(), live.KindLive, login, r.Header.Get(tokenHeader))
+	writeJSON(w, http.StatusOK, liveBody{Channel: ch, HLSURL: s.hlsLink(link), AudioURL: s.hlsLink(audio)})
 }
 
 type videoBody struct {
-	Video  twitch.Video `json:"video"`
-	HLSURL string       `json:"hlsUrl"`
+	Video    twitch.Video `json:"video"`
+	HLSURL   string       `json:"hlsUrl"`
+	AudioURL string       `json:"audioUrl"`
 }
 
 func (s *Server) video(w http.ResponseWriter, r *http.Request) {
@@ -127,8 +129,8 @@ func (s *Server) video(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, err)
 		return
 	}
-	link := s.live.PrepareMaster(r.Context(), live.KindVOD, id, r.Header.Get(tokenHeader))
-	writeJSON(w, http.StatusOK, videoBody{Video: v, HLSURL: s.hlsLink(link)})
+	link, audio := s.live.PrepareMaster(r.Context(), live.KindVOD, id, r.Header.Get(tokenHeader))
+	writeJSON(w, http.StatusOK, videoBody{Video: v, HLSURL: s.hlsLink(link), AudioURL: s.hlsLink(audio)})
 }
 
 type clipBody struct {

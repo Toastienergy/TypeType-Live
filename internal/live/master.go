@@ -18,8 +18,12 @@ func (s *Service) Master(ctx context.Context, values url.Values) ([]byte, error)
 	if err != nil {
 		return nil, err
 	}
+	master := st.master
+	if values.Get("a") == "1" {
+		master = master.AudioOnly()
+	}
 	var buf bytes.Buffer
-	st.master.Write(&buf, func(v hls.Variant) string {
+	master.Write(&buf, func(v hls.Variant) string {
 		link := url.Values{"t": {kind}, "c": {id}, "q": {v.ID}}
 		if key != "" {
 			link.Set("k", key)
