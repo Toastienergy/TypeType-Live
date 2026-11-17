@@ -92,7 +92,10 @@ func (f *Fake) gql(w http.ResponseWriter, r *http.Request) {
 		}
 		user := map[string]any{"id": "42", "login": login, "displayName": strings.ToUpper(login), "profileImageURL": "https://static-cdn.jtvnw.net/a.png"}
 		if login != "offline" {
-			user["stream"] = map[string]any{"id": "s1", "title": "Test stream", "viewersCount": 10, "createdAt": "2026-11-14T20:00:00Z"}
+			user["stream"] = map[string]any{
+				"id": "s1", "title": "Test stream", "viewersCount": 10, "createdAt": "2026-11-14T20:00:00Z",
+				"archiveVideo": map[string]any{"id": "900", "createdAt": "2026-11-14T20:00:04Z"},
+			}
 		}
 		writeData(w, map[string]any{"user": user})
 	case strings.Contains(body.Query, "query Video("):

@@ -36,6 +36,13 @@ type Stream struct {
 	Preview   string    `json:"previewUrl"`
 	StartedAt time.Time `json:"startedAt"`
 	Tags      []string  `json:"tags,omitempty"`
+	// Archive is the past broadcast Twitch records while the channel is live, when it keeps one.
+	Archive *StreamArchive `json:"archive,omitempty"`
+}
+
+type StreamArchive struct {
+	ID        string    `json:"id"`
+	StartedAt time.Time `json:"startedAt"`
 }
 
 type Channel struct {
@@ -130,6 +137,10 @@ type gqlStream struct {
 			Title string `json:"title"`
 		} `json:"broadcastSettings"`
 	} `json:"broadcaster"`
+	Archive *struct {
+		ID        string `json:"id"`
+		CreatedAt string `json:"createdAt"`
+	} `json:"archiveVideo"`
 	Tags []struct {
 		Name string `json:"name"`
 	} `json:"freeformTags"`
@@ -148,6 +159,10 @@ func (s gqlStream) model(owner *gqlUser) Stream {
 	}
 	for _, t := range s.Tags {
 		out.Tags = append(out.Tags, t.Name)
+	}
+	if s.Archive != nil && s.Archive.ID != "" {
+		out.Archive = &StreamArchive{ID: s.Archive.ID}
+		out.Archive.StartedAt, _ = time.Parse(time.RFC3339, s.Archive.CreatedAt)
 	}
 	return out
 }

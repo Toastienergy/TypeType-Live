@@ -54,7 +54,7 @@ const queryChannel = `query Channel($login: String) {
 		` + userFields + ` description bannerImageURL
 		followers { totalCount }
 		roles { isPartner }
-		stream { ` + streamFields + ` }
+		stream { ` + streamFields + ` archiveVideo { id createdAt } }
 	}
 }`
 
