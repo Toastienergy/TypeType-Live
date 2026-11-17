@@ -36,6 +36,13 @@ type Stream struct {
 	Preview   string    `json:"previewUrl"`
 	StartedAt time.Time `json:"startedAt"`
 	Tags      []string  `json:"tags,omitempty"`
+	// Archive is the past broadcast Twitch records while the channel is live, when it keeps one.
+	Archive *StreamArchive `json:"archive,omitempty"`
+}
+
+type StreamArchive struct {
+	ID        string    `json:"id"`
+	StartedAt time.Time `json:"startedAt"`
 }
 
 type Channel struct {
@@ -57,6 +64,8 @@ type Video struct {
 	Preview   string    `json:"previewUrl"`
 	CreatedAt time.Time `json:"createdAt"`
 	Type      string    `json:"type"`
+	// Recording marks the past broadcast of a live still running: its length keeps growing.
+	Recording bool `json:"recording,omitempty"`
 
 	Storyboard string `json:"-"`
 }
@@ -130,6 +139,10 @@ type gqlStream struct {
 			Title string `json:"title"`
 		} `json:"broadcastSettings"`
 	} `json:"broadcaster"`
+	Archive *struct {
+		ID        string `json:"id"`
+		CreatedAt string `json:"createdAt"`
+	} `json:"archiveVideo"`
 	Tags []struct {
 		Name string `json:"name"`
 	} `json:"freeformTags"`
@@ -149,6 +162,10 @@ func (s gqlStream) model(owner *gqlUser) Stream {
 	for _, t := range s.Tags {
 		out.Tags = append(out.Tags, t.Name)
 	}
+	if s.Archive != nil && s.Archive.ID != "" {
+		out.Archive = &StreamArchive{ID: s.Archive.ID}
+		out.Archive.StartedAt, _ = time.Parse(time.RFC3339, s.Archive.CreatedAt)
+	}
 	return out
 }
 
@@ -160,6 +177,7 @@ type gqlVideo struct {
 	Preview   string   `json:"previewThumbnailURL"`
 	CreatedAt string   `json:"createdAt"`
 	Type      string   `json:"broadcastType"`
+	Status    string   `json:"status"`
 	Animated  string   `json:"animatedPreviewURL"`
 	Game      *gqlGame `json:"game"`
 	Owner     *gqlUser `json:"owner"`
@@ -168,7 +186,7 @@ type gqlVideo struct {
 func (v gqlVideo) model(owner *gqlUser) Video {
 	out := Video{
 		ID: v.ID, Title: v.Title, Length: v.Length, Views: v.Views, Preview: image(v.Preview),
-		Type: v.Type, Game: v.Game.model(), Storyboard: v.Animated,
+		Type: v.Type, Game: v.Game.model(), Storyboard: v.Animated, Recording: v.Status == "RECORDING",
 	}
 	out.CreatedAt, _ = time.Parse(time.RFC3339, v.CreatedAt)
 	switch {
