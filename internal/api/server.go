@@ -87,6 +87,7 @@ func New(opts Options) http.Handler {
 	api.HandleFunc("GET /v1/chat/{login}/events", s.chatEvents)
 	api.HandleFunc("GET /v1/chat/{login}/highlights", s.chatHighlights)
 	api.HandleFunc("POST /v1/chat/{login}/messages", s.chatSend)
+	api.HandleFunc("POST /v1/polls/vote", s.pollVote)
 	mux.Handle("/v1/", s.private(api))
 
 	return recoverer(mux)

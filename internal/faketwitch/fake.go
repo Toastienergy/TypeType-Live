@@ -25,6 +25,8 @@ type Fake struct {
 	ChannelCalls  atomic.Int64
 	// ChapterAuth holds the Authorization header of the last chapters query; "OAuth revoked" is answered with 401.
 	ChapterAuth atomic.Value
+	// LastVote holds the input of the last poll vote; a choice named "closed" is refused like an ended poll.
+	LastVote atomic.Value
 
 	follows sync.Map
 }
@@ -57,6 +59,9 @@ func (f *Fake) gql(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
+	if f.viewerQuery(w, r, body) {
+		return
+	}
 	login, _ := body.Variables["login"].(string)
 	switch {
 	case body.OperationName == "PlaybackAccessToken":
@@ -73,10 +78,6 @@ func (f *Fake) gql(w http.ResponseWriter, r *http.Request) {
 		writeData(w, map[string]any{key: map[string]any{"value": string(value), "signature": "sig"}})
 	case body.OperationName == "FollowButton_FollowUser" || body.OperationName == "FollowButton_UnfollowUser":
 		f.changeFollow(w, body)
-	case body.OperationName == "AvailableEmotesForChannelPaginated":
-		f.emoteSets(w, body)
-	case body.OperationName == "VideoPlayer_ChapterSelectButtonVideo":
-		f.chapters(w, r)
 	case strings.Contains(body.Query, "query SelfFollowing("):
 		var follower any
 		if at, ok := f.follows.Load("42"); ok {
@@ -103,6 +104,33 @@ func (f *Fake) gql(w http.ResponseWriter, r *http.Request) {
 	default:
 		writeData(w, map[string]any{})
 	}
+}
+
+// viewerQuery answers the operations made with a viewer token.
+func (f *Fake) viewerQuery(w http.ResponseWriter, r *http.Request, body gqlBody) bool {
+	switch {
+	case body.OperationName == "AvailableEmotesForChannelPaginated":
+		f.emoteSets(w, body)
+	case body.OperationName == "VideoPlayer_ChapterSelectButtonVideo":
+		f.chapters(w, r)
+	case strings.Contains(body.Query, "query CurrentUser"):
+		writeData(w, map[string]any{"currentUser": map[string]any{"id": "7", "login": "viewer", "displayName": "Viewer"}})
+	case strings.Contains(body.Query, "mutation VoteInPoll("):
+		f.vote(w, body)
+	default:
+		return false
+	}
+	return true
+}
+
+func (f *Fake) vote(w http.ResponseWriter, body gqlBody) {
+	input, _ := body.Variables["input"].(map[string]any)
+	f.LastVote.Store(input)
+	var voteErr any
+	if input["choiceID"] == "closed" {
+		voteErr = map[string]any{"code": "POLL_NOT_ACTIVE"}
+	}
+	writeData(w, map[string]any{"voteInPoll": map[string]any{"error": voteErr}})
 }
 
 func (f *Fake) chapters(w http.ResponseWriter, r *http.Request) {
