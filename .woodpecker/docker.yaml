@@ -102,6 +102,8 @@ steps:
         docker build --pull --platform linux/amd64 \
           --provenance=false --sbom=false \
           --build-arg "APP_VERSION=$${VERSION}" \
+          --build-arg "GITHUB_SHA=$${CI_COMMIT_SHA}" \
+          --build-arg "BUILD_TIME=$$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
           -t "$${LOCAL_REPO}:$${VERSION}" .
 
         for tag in $${TAGS}; do
@@ -150,6 +152,8 @@ steps:
         docker build --pull --platform linux/arm64 \
           --provenance=false --sbom=false \
           --build-arg "APP_VERSION=$${VERSION}" \
+          --build-arg "GITHUB_SHA=$${CI_COMMIT_SHA}" \
+          --build-arg "BUILD_TIME=$$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
           -t "$${LOCAL_REPO}:$${VERSION}-arm64" .
 
         for tag in $${TAGS}; do
