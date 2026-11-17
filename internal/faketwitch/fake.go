@@ -100,6 +100,9 @@ func (f *Fake) gql(w http.ResponseWriter, r *http.Request) {
 		writeData(w, map[string]any{"user": user})
 	case strings.Contains(body.Query, "query Video("):
 		video := map[string]any{"id": body.Variables["id"], "title": "Past broadcast", "lengthSeconds": 60, "broadcastType": "ARCHIVE"}
+		if body.Variables["id"] == "900" {
+			video["status"] = "RECORDING"
+		}
 		if body.Variables["id"] == RestrictedVOD {
 			video["animatedPreviewURL"] = f.Base + "/cdn/special_" + RestrictedVOD + "/storyboards/" + RestrictedVOD + "-strip-0.jpg"
 		}

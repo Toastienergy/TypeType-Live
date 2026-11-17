@@ -11,7 +11,7 @@ const streamFields = `id title viewersCount createdAt previewImageURL(width: 640
 const streamWithBroadcaster = streamFields + `
 	broadcaster { ` + userFields + ` broadcastSettings { title } }`
 
-const videoFields = `id title lengthSeconds viewCount createdAt broadcastType animatedPreviewURL previewThumbnailURL(width: 640, height: 360)
+const videoFields = `id title lengthSeconds viewCount createdAt broadcastType status animatedPreviewURL previewThumbnailURL(width: 640, height: 360)
 	game { ` + gameFields + ` }`
 
 const clipFields = `slug title durationSeconds viewCount createdAt videoOffsetSeconds thumbnailURL(width: 480, height: 272)

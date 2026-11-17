@@ -64,6 +64,8 @@ type Video struct {
 	Preview   string    `json:"previewUrl"`
 	CreatedAt time.Time `json:"createdAt"`
 	Type      string    `json:"type"`
+	// Recording marks the past broadcast of a live still running: its length keeps growing.
+	Recording bool `json:"recording,omitempty"`
 
 	Storyboard string `json:"-"`
 }
@@ -175,6 +177,7 @@ type gqlVideo struct {
 	Preview   string   `json:"previewThumbnailURL"`
 	CreatedAt string   `json:"createdAt"`
 	Type      string   `json:"broadcastType"`
+	Status    string   `json:"status"`
 	Animated  string   `json:"animatedPreviewURL"`
 	Game      *gqlGame `json:"game"`
 	Owner     *gqlUser `json:"owner"`
@@ -183,7 +186,7 @@ type gqlVideo struct {
 func (v gqlVideo) model(owner *gqlUser) Video {
 	out := Video{
 		ID: v.ID, Title: v.Title, Length: v.Length, Views: v.Views, Preview: image(v.Preview),
-		Type: v.Type, Game: v.Game.model(), Storyboard: v.Animated,
+		Type: v.Type, Game: v.Game.model(), Storyboard: v.Animated, Recording: v.Status == "RECORDING",
 	}
 	out.CreatedAt, _ = time.Parse(time.RFC3339, v.CreatedAt)
 	switch {
