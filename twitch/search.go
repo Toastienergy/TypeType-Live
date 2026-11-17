@@ -102,6 +102,22 @@ func (c *Client) FollowedLive(ctx context.Context, userToken string, first int, 
 	return out, nil
 }
 
+// FollowedVideos lists the past broadcasts of the channels the viewer follows, newest first.
+func (c *Client) FollowedVideos(ctx context.Context, userToken string, first int, after string) (Page[Video], error) {
+	var data struct {
+		User *struct {
+			Videos connection[gqlVideo] `json:"followedVideos"`
+		} `json:"user"`
+	}
+	if err := c.raw(ctx, userToken, queryFollowedVideos, pageVars(first, after), &data); err != nil {
+		return Page[Video]{}, err
+	}
+	if data.User == nil {
+		return Page[Video]{}, ErrBadToken
+	}
+	return toPage(data.User.Videos, func(v gqlVideo) Video { return v.model(nil) }), nil
+}
+
 func (c *Client) FollowedChannels(ctx context.Context, userToken string, first int, after string) (Page[User], error) {
 	var data struct {
 		User *struct {

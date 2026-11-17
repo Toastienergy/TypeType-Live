@@ -124,6 +124,15 @@ const queryFollowedLive = `query FollowedLive($first: Int, $after: Cursor) {
 	}
 }`
 
+const queryFollowedVideos = `query FollowedVideos($first: Int, $after: Cursor) {
+	user {
+		followedVideos(first: $first, after: $after, types: [ARCHIVE], sort: TIME) {
+			edges { cursor node { ` + videoFields + ` owner { ` + userFields + ` } } }
+			pageInfo { hasNextPage }
+		}
+	}
+}`
+
 const queryFollowedChannels = `query FollowedChannels($first: Int, $after: Cursor) {
 	user {
 		follows(first: $first, after: $after) {

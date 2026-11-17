@@ -77,6 +77,7 @@ func New(opts Options) http.Handler {
 	api.HandleFunc("POST /v1/auth/revoke", s.authRevoke)
 	api.HandleFunc("GET /v1/me", s.me)
 	api.HandleFunc("GET /v1/me/live", s.meLive)
+	api.HandleFunc("GET /v1/me/videos", s.meVideos)
 	api.HandleFunc("GET /v1/me/follows", s.meFollows)
 	api.HandleFunc("GET /v1/me/follows/{login}", s.followState)
 	api.HandleFunc("PUT /v1/me/follows/{login}", s.follow)
