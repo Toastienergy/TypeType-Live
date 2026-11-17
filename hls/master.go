@@ -115,6 +115,20 @@ func (m Master) Closest(target Variant) (Variant, bool) {
 	return best, found
 }
 
+// AudioOnly keeps the audio renditions; a master without one is returned whole, so playback still works.
+func (m Master) AudioOnly() Master {
+	var audio []Variant
+	for _, v := range m.Variants {
+		if v.AudioOnly() {
+			audio = append(audio, v)
+		}
+	}
+	if len(audio) == 0 {
+		return m
+	}
+	return Master{Tags: m.Tags, Variants: audio}
+}
+
 func (m Master) Write(buf *bytes.Buffer, uri func(Variant) string) {
 	buf.WriteString("#EXTM3U\n")
 	for _, tag := range m.Tags {
