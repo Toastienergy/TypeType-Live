@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/TypeType-Video/TypeType-Live/hls"
 	"github.com/TypeType-Video/TypeType-Live/proxy"
@@ -14,29 +15,33 @@ import (
 
 func (s *Service) Variant(ctx context.Context, values url.Values) ([]byte, error) {
 	kind, id, key, q := values.Get("t"), values.Get("c"), values.Get("k"), values.Get("q")
-	ttl := livePlaylistTTL
-	if kind == KindVOD {
-		ttl = vodPlaylistTTL
-	}
 	ck := "pl/" + kind + "/" + id + "/" + key + "/" + q
 	s.metrics.PlaylistServed.Add(1)
 	if body, ok := s.playlists.Get(ck); ok {
 		return body, nil
 	}
 	return s.playlistGroup.Do(ctx, ck, func(ctx context.Context) ([]byte, error) {
-		body, err := s.renderVariant(ctx, kind, id, key, q)
+		body, ended, err := s.renderVariant(ctx, kind, id, key, q)
 		if err != nil {
 			return nil, err
 		}
-		s.playlists.Set(ck, body, ttl)
+		s.playlists.Set(ck, body, playlistTTL(kind, ended))
 		return body, nil
 	})
 }
 
-func (s *Service) renderVariant(ctx context.Context, kind, id, key, q string) ([]byte, error) {
+// A past broadcast without an end is still recording: its playlist grows like a live one.
+func playlistTTL(kind string, ended bool) time.Duration {
+	if kind == KindVOD && ended {
+		return vodPlaylistTTL
+	}
+	return livePlaylistTTL
+}
+
+func (s *Service) renderVariant(ctx context.Context, kind, id, key, q string) ([]byte, bool, error) {
 	media, target, err := s.fetchVariant(ctx, kind, id, key, q, twitch.DefaultPlayer)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	if kind == KindLive && media.HasAds() {
 		s.metrics.AdPlaylists.Add(1)
@@ -64,7 +69,7 @@ func (s *Service) renderVariant(ctx context.Context, kind, id, key, q string) ([
 		}
 		return "segment.ts?" + s.signer.Sign(link, ttl).Encode()
 	})
-	return buf.Bytes(), nil
+	return buf.Bytes(), media.Ended, nil
 }
 
 func (s *Service) fetchVariant(ctx context.Context, kind, id, key, q string, player twitch.Player) (hls.Media, hls.Variant, error) {

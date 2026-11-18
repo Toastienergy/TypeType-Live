@@ -178,7 +178,10 @@ func (f *Fake) changeFollow(w http.ResponseWriter, body gqlBody) {
 	writeData(w, map[string]any{"unfollowUser": map[string]any{"follow": map[string]any{}}})
 }
 
-const RestrictedVOD = "777"
+const (
+	RestrictedVOD = "777"
+	RecordingVOD  = "900"
+)
 
 func (f *Fake) cdn(w http.ResponseWriter, r *http.Request) {
 	q, file := r.PathValue("q"), r.PathValue("file")
@@ -235,10 +238,16 @@ func (f *Fake) playlist(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/vnd.apple.mpegurl")
 	if kind == "vod" {
 		fmt.Fprintf(w, "#EXTM3U\n#EXT-X-TARGETDURATION:10\n#EXT-X-MEDIA-SEQUENCE:0\n")
-		for i := range 6 {
+		segments, recording := 6, id == RecordingVOD
+		if recording {
+			segments += int(f.PlaylistCalls.Load())
+		}
+		for i := range segments {
 			fmt.Fprintf(w, "#EXTINF:10.000,\n%d.ts\n", i)
 		}
-		fmt.Fprintf(w, "#EXT-X-ENDLIST\n")
+		if !recording {
+			fmt.Fprintf(w, "#EXT-X-ENDLIST\n")
+		}
 		return
 	}
 	seq := f.Now().Unix() / 2
