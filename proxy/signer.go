@@ -30,11 +30,20 @@ func NewSigner(key []byte) *Signer {
 }
 
 func (s *Signer) Sign(values url.Values, ttl time.Duration) url.Values {
+	return s.SignUntil(values, s.Expiry(ttl))
+}
+
+// Expiry rounds to the minute so that links signed within the same minute are identical.
+func (s *Signer) Expiry(ttl time.Duration) time.Time {
+	return s.now().Add(ttl).Truncate(time.Minute)
+}
+
+func (s *Signer) SignUntil(values url.Values, expires time.Time) url.Values {
 	signed := make(url.Values, len(values)+2)
 	for k, v := range values {
 		signed[k] = v
 	}
-	signed.Set("e", strconv.FormatInt(s.now().Add(ttl).Truncate(time.Minute).Unix(), 10))
+	signed.Set("e", strconv.FormatInt(expires.Unix(), 10))
 	var sum [sha256.Size]byte
 	s.sum(signed, &sum)
 	signed.Set("s", base64.RawURLEncoding.EncodeToString(sum[:]))

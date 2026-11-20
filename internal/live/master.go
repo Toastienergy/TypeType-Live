@@ -12,7 +12,8 @@ import (
 	"github.com/TypeType-Video/TypeType-Live/twitch"
 )
 
-func (s *Service) Master(ctx context.Context, values url.Values) ([]byte, error) {
+// Master signs prefetch off into the variant links when the player asked for it.
+func (s *Service) Master(ctx context.Context, values url.Values, prefetch bool) ([]byte, error) {
 	kind, id, key := values.Get("t"), values.Get("c"), values.Get("k")
 	st, err := s.masterState(ctx, kind, id, key, twitch.DefaultPlayer, false)
 	if err != nil {
@@ -27,6 +28,9 @@ func (s *Service) Master(ctx context.Context, values url.Values) ([]byte, error)
 		link := url.Values{"t": {kind}, "c": {id}, "q": {v.ID}}
 		if key != "" {
 			link.Set("k", key)
+		}
+		if !prefetch {
+			link.Set("p", "0")
 		}
 		return "variant.m3u8?" + s.signer.Sign(link, variantLinkTTL).Encode()
 	})

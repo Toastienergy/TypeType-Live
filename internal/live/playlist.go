@@ -13,15 +13,20 @@ import (
 	"github.com/TypeType-Video/TypeType-Live/twitch"
 )
 
-func (s *Service) Variant(ctx context.Context, values url.Values) ([]byte, error) {
+// Variant lists Twitch's prefetch segments only when prefetch is set: they come back under another address once
+// encoded, which AVPlayer refuses.
+func (s *Service) Variant(ctx context.Context, values url.Values, prefetch bool) ([]byte, error) {
 	kind, id, key, q := values.Get("t"), values.Get("c"), values.Get("k"), values.Get("q")
 	ck := "pl/" + kind + "/" + id + "/" + key + "/" + q
+	if !prefetch {
+		ck += "/np"
+	}
 	s.metrics.PlaylistServed.Add(1)
 	if body, ok := s.playlists.Get(ck); ok {
 		return body, nil
 	}
 	return s.playlistGroup.Do(ctx, ck, func(ctx context.Context) ([]byte, error) {
-		body, ended, err := s.renderVariant(ctx, kind, id, key, q)
+		body, ended, err := s.renderVariant(ctx, kind, id, key, q, prefetch)
 		if err != nil {
 			return nil, err
 		}
@@ -38,7 +43,7 @@ func playlistTTL(kind string, ended bool) time.Duration {
 	return livePlaylistTTL
 }
 
-func (s *Service) renderVariant(ctx context.Context, kind, id, key, q string) ([]byte, bool, error) {
+func (s *Service) renderVariant(ctx context.Context, kind, id, key, q string, prefetch bool) ([]byte, bool, error) {
 	media, target, err := s.fetchVariant(ctx, kind, id, key, q, twitch.DefaultPlayer)
 	if err != nil {
 		return nil, false, err
@@ -54,12 +59,22 @@ func (s *Service) renderVariant(ctx context.Context, kind, id, key, q string) ([
 		}
 	}
 	// Both latency modes of the web player read the prefetch segments: the steady one simply stays further behind.
-	if kind == KindLive {
+	if kind == KindLive && prefetch {
 		media = media.WithPrefetchSegments()
 	}
 	ttl, cacheable := vodSegmentTTL, ""
 	if kind == KindLive {
 		ttl, cacheable = liveSegmentTTL, "1"
+	}
+	// An ended playlist is read once, so only the ones a player refreshes go through the segment memory.
+	now, fresh := s.now(), func() time.Time { return s.signer.Expiry(ttl) }
+	if !media.Ended {
+		segments := make([]hls.Segment, len(media.Segments))
+		for i, segment := range media.Segments {
+			_, segment.Duration = s.segmentMemory.remember(cacheable+segment.URI, segment.Duration, ttl, now, fresh)
+			segments[i] = segment
+		}
+		media.Segments = segments
 	}
 	var buf bytes.Buffer
 	media.Write(&buf, func(segment string) string {
@@ -67,7 +82,11 @@ func (s *Service) renderVariant(ctx context.Context, kind, id, key, q string) ([
 		if cacheable != "" {
 			link.Set("m", cacheable)
 		}
-		return "segment.ts?" + s.signer.Sign(link, ttl).Encode()
+		if media.Ended {
+			return "segment.ts?" + s.signer.Sign(link, ttl).Encode()
+		}
+		expires, _ := s.segmentMemory.remember(cacheable+segment, 0, ttl, now, fresh)
+		return "segment.ts?" + s.signer.SignUntil(link, expires).Encode()
 	})
 	return buf.Bytes(), media.Ended, nil
 }
