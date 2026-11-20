@@ -65,6 +65,7 @@ type Service struct {
 	segmentGroup  cache.Group[[]byte]
 	playlistGroup cache.Group[[]byte]
 	masterGroup   cache.Group[*masterState]
+	segmentMemory *segmentMemory
 
 	mu       sync.Mutex
 	masters  map[string]*masterState
@@ -87,6 +88,7 @@ func New(cfg Config) *Service {
 		segments:      cache.NewLRU(cfg.SegmentBytes),
 		playlists:     cache.NewLRU(8 << 20),
 		masters:       make(map[string]*masterState),
+		segmentMemory: newSegmentMemory(),
 		sessions:      newSessions(),
 	}
 }

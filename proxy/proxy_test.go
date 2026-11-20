@@ -36,6 +36,21 @@ func TestSignerExpiry(t *testing.T) {
 	}
 }
 
+func TestSignUntilGivesTheSameLinkForTheSameExpiry(t *testing.T) {
+	s := NewSigner([]byte("k"))
+	now := time.Unix(1000, 0)
+	s.now = func() time.Time { return now }
+	expires := s.Expiry(10 * time.Minute)
+	first := s.SignUntil(url.Values{"x": {"a"}}, expires).Encode()
+	now = now.Add(3 * time.Minute)
+	if again := s.SignUntil(url.Values{"x": {"a"}}, expires).Encode(); again != first {
+		t.Fatalf("link changed: %s then %s", first, again)
+	}
+	if s.Sign(url.Values{"x": {"a"}}, 10*time.Minute).Encode() == first {
+		t.Fatal("Sign kept the old expiry")
+	}
+}
+
 func TestHostsAllowList(t *testing.T) {
 	h := NewHosts(DefaultAllowedSuffixes)
 	for _, ok := range []string{"https://a.hls.ttvnw.net/s.ts", "https://x.hls.live-video.net/v1/segment/y"} {
