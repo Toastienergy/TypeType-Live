@@ -2,7 +2,6 @@ package twitch
 
 import "strings"
 
-// languages are the values of Twitch's broadcaster language enum, as the directory filter offers them.
 var languages = map[string]bool{
 	"AR": true, "ASL": true, "BG": true, "CA": true, "CS": true, "DA": true, "DE": true, "EL": true, "EN": true,
 	"ES": true, "FI": true, "FR": true, "HI": true, "HU": true, "ID": true, "IT": true, "JA": true, "KO": true,
@@ -10,8 +9,7 @@ var languages = map[string]bool{
 	"TH": true, "TL": true, "TR": true, "UK": true, "VI": true, "ZH": true, "ZH_HK": true, "OTHER": true,
 }
 
-// ParseLanguages reads a comma separated list of broadcaster languages such as "de,en". An empty list means no
-// filter. It reports false when a value is not a language Twitch knows, because Twitch rejects the whole query then.
+// ParseLanguages refuses the whole list for one unknown value, because Twitch rejects the whole query then.
 func ParseLanguages(raw string) ([]string, bool) {
 	var out []string
 	seen := map[string]bool{}
@@ -31,7 +29,6 @@ func ParseLanguages(raw string) ([]string, bool) {
 	return out, true
 }
 
-// languageVars sets the language filter on a streams query. No languages leaves the variable out.
 func languageVars(vars map[string]any, languages []string) map[string]any {
 	if len(languages) > 0 {
 		vars["languages"] = languages
